@@ -352,9 +352,92 @@ int add_check (int argc , char *const argv[]) {
     }
     return 0;
 }
+int resetf (int argc , char *const argv[]) {
+    for (int p = 3; p < argc; p++) {
+        if (chdir (".main") != 0) {
+            perror ("there is no repository!\n");
+            return 1;
+        }
+        DIR *dir = opendir ("stages");
+        if (chdir ("stages") != 0) {
+            return 1;
+        }
+        struct dirent *entry;
+        int flag = 0;
+        while ((entry = readdir(dir)) != NULL) {
+            if (strcmp (entry->d_name , argv[p]) == 0 && entry->d_type == DT_DIR) {
+                flag = 1;
+                DIR *dir1 = opendir (argv[p]);
+                if (chdir (argv[p]) != 0) {
+                    return 1;
+                }
+                struct dirent *entry1;
+                while ((entry1 = readdir (dir1)) != NULL) {
+                    remove (entry1->d_name);
+                }
+                if (chdir ("..") != 0) {
+                    return 1;
+                } 
+                rmdir (argv[p]);        
+            } else if (strcmp (entry->d_name , argv[p]) == 0) {
+                flag = 1;
+                remove (argv[p]);
+            }
+        }
+        for (int i = 0; i < 2; i++) {
+            if (chdir ("..") != 0) {
+                return 1;
+            }
+        }
+        if (flag == 0) {
+            printf ("%s is not in stage.\n", argv[p]);
+        }
+    }
+}
+int reset (int argc , char *const argv[]) {
+    if (chdir (".main") != 0) {
+        perror ("there is no repository\n");
+        return 1;
+    }
+    DIR *dir = opendir ("stages");
+    if (chdir ("stages") != 0) {
+        return 1;
+    }
+    struct dirent *entry;
+    int flag = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp (entry->d_name , argv[2]) == 0 && entry->d_type == DT_DIR) {
+            flag = 1;
+            DIR *dir1 = opendir (argv[2]);
+            if (chdir (argv[2]) != 0) {
+                return 1;
+            }
+            struct dirent *entry1;
+            while ((entry1 = readdir (dir1)) != NULL) {
+                remove (entry1->d_name);
+            }
+            if (chdir ("..") != 0) {
+                return 1;
+            } 
+            rmdir (argv[2]);        
+        } else if (strcmp (entry->d_name , argv[2]) == 0) {
+            flag = 1;
+            remove (argv[2]);
+        }
+    }
+    for (int i = 0; i < 2; i++) {
+        if (chdir ("..") != 0) {
+            return 1;
+        }
+    }
+    if (flag == 0) {
+        printf ("%s is not in stage.\n", argv[2]);
+    }
+    return 0;
+}
 int main (int argc , char *argv[]) {
     for (int i = 0; i < argc; i++) {
-        printf ("argv %d : %s\n",i , argv[i]);
+        printf ("argv%d : %s\n",i , argv[i]);
     }
     char cwd1[FILENAME_MAX];
     if (argc < 2) {
@@ -392,8 +475,23 @@ int main (int argc , char *argv[]) {
     } else if (strcmp (argv[1] , "add") == 0) {
         if (argc == 2) {
             perror ("please enter a file or a directory.\n");
+            return 1;
         }
         add_check (argc , argv);
+    } else if (strcmp (argv[1] , "reset") == 0) {
+        if (argc == 2) {
+            perror ("please enter a file or a directory.\n");
+            return 1;
+        }
+        if (strcmp (argv[2] , "-f") == 0) {
+            if (argc == 3) {
+                perror ("please enter a file or a directory.\n");
+                return 1;
+            }
+            resetf (argc , argv);
+        } else {
+            reset (argc , argv);
+        }
     } else {
         perror ("this is not a valid command\n");
     }
