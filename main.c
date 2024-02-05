@@ -348,6 +348,7 @@ int resetf (int argc , char *const argv[]) {
             printf ("%s is not in stage.\n", argv[p]);
         }
     }
+    return 0;
 }
 int reset (int argc , char *const argv[]) {
     if (chdir (".main") != 0) {
@@ -385,8 +386,225 @@ int reset (int argc , char *const argv[]) {
     }
     return 0;
 }
-
-
+int check_commit3 (char filename[] , char name[] , char FIRST_ADDRESS[]) {
+    chdir (".main");
+    chdir ("master");
+    chdir ("commits");
+    FILE *file = fopen ("commitnumber" , "r");
+    int number = 0;
+    if (file != NULL) {
+        fscanf (file , "%d" , &number);
+    }
+    fclose (file);
+    char combined[FILENAME_MAX];
+    sprintf (combined , "commit%d" , number);
+    if (number != 0) {
+        chdir (combined);
+        chdir (name);
+        DIR *dir = opendir (".");
+        struct dirent *entry;
+        while ((entry = readdir (dir)) != NULL) {
+            
+            if (strcmp (filename , entry->d_name) == 0) {
+                printf ("%s/%s :          -M\n", name , filename);
+            }
+        }
+    } else {
+        printf ("%s/%s :          -A\n" , name , filename);
+    }
+    chdir (FIRST_ADDRESS);
+    return 0;
+}
+int check_commit2 (char name[] , char FIRST_ADDRESS[] , int type) {
+    char address[FILENAME_MAX];
+    getcwd (address , sizeof (address));
+    chdir (name);
+    char add1[FILENAME_MAX];
+    getcwd (add1 , sizeof (add1));
+    chdir (FIRST_ADDRESS);
+    chdir (name);
+    char add2[FILENAME_MAX];
+    getcwd (add2 , sizeof (add2));
+    DIR *dir2 = opendir (".");
+    struct dirent *entry2;
+    while ((entry2 = readdir (dir2)) != NULL) {
+        chdir (add1);
+        DIR *dir4 = opendir (".");
+        struct dirent *entry4;
+        int flag = 0;
+        if (strcmp (entry2->d_name , ".") != 0 && strcmp (entry2->d_name , "..") != 0) {
+            while ((entry4 = readdir (dir4)) != NULL) {
+                if (strcmp (entry4->d_name , entry2->d_name) == 0) {
+                    flag = 1;
+                    printf ("%s/%s :          -M\n", name , entry4->d_name);
+                }
+            }
+            if (flag == 0) {
+                printf ("%s/%s :          -A\n", name , entry2->d_name);
+            }
+        }
+    }
+    chdir(add1);
+    DIR *dir1 = opendir (".");
+    struct dirent *entry1;
+    while ((entry1 = readdir (dir1)) != NULL) {
+        chdir (add2);
+        DIR *dir3 = opendir (".");
+        struct dirent *entry3;
+        int flag = 0;
+        if (strcmp (entry1->d_name , ".") != 0 && strcmp (entry1->d_name , "..") != 0) {
+            while ((entry3 = readdir (dir3)) != NULL) {
+                if (strcmp (entry1->d_name , entry3->d_name) == 0) {
+                    flag = 1;
+                }
+            }
+            if (flag == 0) {
+                printf ("%s/%s :          -D\n" , name , entry1->d_name);
+            }
+        }
+    }
+    chdir (address);
+    return 0;
+}
+int check_commit1 (char name[] , char FIRST_ADDRESS[] , int type) {
+    char address[FILENAME_MAX];
+    getcwd (address , sizeof (address));
+    chdir ("..");
+    chdir ("commits");
+    FILE *file = fopen ("commitnumber" , "r");
+    int number = 0;
+    if (file != NULL) {
+        fscanf (file , "%d" , &number);
+    }
+    fclose (file);
+    char combined[FILENAME_MAX];
+    sprintf (combined , "commit%d" , number);
+    if (number != 0) {
+        chdir (combined);
+        DIR *dir = opendir (".");
+        struct dirent *entry;
+        int flag = 0;
+        while ((entry = readdir (dir)) != NULL) {
+            if (strcmp (entry->d_name , name) == 0) {
+                flag = 1;
+                if (entry->d_type == DT_DIR) {
+                    char temp[FILENAME_MAX];
+                    getcwd (temp , sizeof (temp));
+                    chdir (combined);
+                    check_commit2 (name , FIRST_ADDRESS , type);
+                    chdir (temp);
+                } else {
+                    printf ("%s :          -M\n", name);
+                }
+            }
+        }
+        if (flag == 0) {
+            char temp[FILENAME_MAX];
+            getcwd (temp , sizeof (temp));
+            chdir (FIRST_ADDRESS);
+            if (type == DT_DIR) {
+                DIR *dir1 = opendir (name);
+                struct dirent *entry1;
+                while ((entry1 = readdir (dir1)) != NULL) {
+                    if (strcmp (entry1->d_name , ".") != 0 && strcmp (entry1->d_name , "..") != 0) {
+                        printf ("%s/%s :          -A\n" , name , entry1->d_name);
+                    }
+                }
+            } else {
+                printf ("%s :          -A\n" , name);
+            }
+            chdir (temp);
+        }
+    } else {
+        if (type == DT_DIR) {
+            char temp[FILENAME_MAX];
+            getcwd (temp , sizeof (temp));
+            chdir (FIRST_ADDRESS);
+            chdir (name);
+            DIR *dir24 = opendir (".");
+            struct dirent *entry24;
+            while ((entry24 = readdir (dir24)) != NULL) {
+                if (strcmp (entry24->d_name , ".") != 0 && strcmp (entry24->d_name , "..") != 0) {
+                    printf ("%s/%s :          -A\n" , name , entry24->d_name);
+                }
+            }
+            chdir (temp);
+        } else {
+            printf ("%s :          -A\n" , name);
+        }
+    }
+    chdir (address);
+    return 0;
+}
+int check_stage (char name[] , char FIRST_ADDRESS[] , int type) {
+    if (chdir (".main") != 0){
+        perror ("there is no repository\n");
+        return 1;
+    }
+    chdir ("master");
+    DIR *dir = opendir ("stages");
+    chdir ("stages");
+    struct dirent *entry;
+    int flag = 0;
+    while ((entry = readdir (dir)) != NULL) {
+        if (strcmp (entry->d_name , name) == 0) {
+            flag = 1;
+            if (entry->d_type == DT_DIR) {
+                char address[FILENAME_MAX];
+                getcwd (address , sizeof (address));
+                chdir (name);
+                char add1[FILENAME_MAX];
+                getcwd (add1 , sizeof (add1));
+                chdir (FIRST_ADDRESS);
+                chdir (name);
+                char add2[FILENAME_MAX];
+                getcwd (add2 , sizeof (add2));
+                DIR *dir1 = opendir (".");
+                struct dirent *entry1;
+                while ((entry1 = readdir (dir1)) != NULL) {
+                    chdir (add1);
+                    DIR *dir2 = opendir (".");
+                    struct dirent *entry2;
+                    int flag = 0;
+                    if (strcmp (entry1->d_name , ".") != 0 && strcmp (entry1->d_name , "..") != 0) {
+                        while ((entry2 = readdir (dir2)) != NULL) {
+                            if (strcmp (entry1->d_name , entry2->d_name) == 0) {
+                                flag = 1;
+                                printf ("%s/%s :          +0\n" , name , entry1->d_name);
+                            }
+                        }
+                        if (flag == 0) {
+                            char temp[FILENAME_MAX];
+                            getcwd (temp , sizeof (temp));
+                            chdir (FIRST_ADDRESS);
+                            check_commit3 (entry1->d_name , name , FIRST_ADDRESS);
+                            chdir (temp);
+                        }
+                    }
+                }
+                chdir (address);
+            } else {
+                printf ("%s :          +0\n", entry->d_name);
+            }
+        }
+    }
+    if (flag == 0) {
+        check_commit1 (name , FIRST_ADDRESS , type);
+    }
+    chdir (FIRST_ADDRESS);
+    return 0;
+}
+int status (int argc , char *const argv[]) {
+    char FIRST_ADDRESS[FILENAME_MAX];
+    getcwd (FIRST_ADDRESS , sizeof (FIRST_ADDRESS));
+    DIR *dir = opendir (".");
+    struct dirent *entry;
+    while ((entry = readdir (dir)) != NULL) {
+        if (x".")y && x"..")y && x".git")y && x".main")y && x".vscode")y && x"global")y && x"main.c")y && x"main.exe")y && x"README.md")y && x"tempCodeRunnerFile.c")y ) {
+            check_stage (entry->d_name , FIRST_ADDRESS , entry->d_type);
+        }
+    }
+}
 
 
 int commit (int argc , char *const argv[]) {
@@ -526,6 +744,12 @@ int main (int argc , char *argv[]) {
         } else {
             reset (argc , argv);
         }
+    } else if (strcmp (argv[1] , "status") == 0) {
+        if (argc > 2) {
+            perror ("invalid command\n");
+            return 1;
+        }
+        status (argc , argv);
     } else if (strcmp (argv[1] , "commit") == 0) {
         if (strcmp (argv[2] , "-m") == 0) {
             commit (argc , argv);
@@ -533,7 +757,10 @@ int main (int argc , char *argv[]) {
             perror ("invalid command!\n");
             return 1;
         }
-    } else {
+    } 
+    
+    
+    else {
         perror ("this is not a valid command\n");
     }
     return 0;
