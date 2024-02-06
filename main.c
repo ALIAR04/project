@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <windows.h>
+#include <time.h>
 #define x strcmp(entry->d_name,
 #define y !=0
 int global (int argc , char *const argv[]) {
@@ -642,7 +643,6 @@ int commit (int argc , char *const argv[]) {
     chdir ("stages");
     char add_stage[FILENAME_MAX] , add_commit[FILENAME_MAX];
     getcwd (add_stage , sizeof(add_stage));
-    printf ("add_stage : %s\n" , add_stage);
     chdir ("..");
     chdir ("commits");
     FILE *commitnumber = fopen ("commitnumber" , "r");
@@ -659,8 +659,14 @@ int commit (int argc , char *const argv[]) {
     fprintf (commitnumber , "%d", number);
     fclose (commitnumber);
     chdir (combined);
+    FILE *information = fopen ("information.txt" , "w");
+    fprintf (information , "ID : %s\n" , combined);
+    fprintf (information , "message : %s\n" , argv[3]);
+    time_t t;
+    time (&t);
+    fprintf (information , "time : %s\n" , ctime (&t));
+    fclose (information);
     getcwd (add_commit , sizeof (add_commit));
-    printf ("add_commit : %s\n", add_commit);
     DIR *dir = opendir (add_stage);
     struct dirent *entry;
     while ((entry = readdir (dir)) != NULL) {
@@ -807,9 +813,33 @@ int main (int argc , char *argv[]) {
         } else {
             make_branch (argc , argv);
         }
+    } else if (strcmp (argv[1] , "log") == 0) {
+        if (argc == 2) {
+            // normal_log (argc , argv);
+        } else if (argc == 4) {
+            if (strcmp (argv[2] , "-n") == 0) {
+
+            } else if (strcmp (argv[2] , "-branch") == 0) {
+
+            } else if (strcmp (argv[2] , "-author") == 0) {
+
+            } else if (strcmp (argv[2] , "-since") == 0) {
+
+            } else if (strcmp (argv[2] , "-before") == 0) {
+
+            } else if (strcmp (argv[2] , "-search") == 0) {
+
+            } else {
+                perror ("please enter a valid command\n");
+                return 1;
+            }
+        } else {
+            perror ("please enter a valid command\n");
+            return 1;
+        }
     }
     
-    
+
     
     else {
         perror ("this is not a valid command\n");
