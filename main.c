@@ -605,7 +605,21 @@ int status (int argc , char *const argv[]) {
         }
     }
 }
-
+int make_folders_branch (char *const argv[]) {
+    CreateDirectory ("stages" , NULL);
+    CreateDirectory ("commits" , NULL);
+    return 0;
+}
+int make_branch (int argc , char *const argv[]) {
+    char FIRST_ADDRESS[FILENAME_MAX];
+    getcwd (FIRST_ADDRESS , sizeof (FIRST_ADDRESS));
+    chdir (".main");
+    CreateDirectory (argv[2] , NULL);
+    chdir (argv[2]);
+    make_folders_branch (argv);
+    chdir (FIRST_ADDRESS);
+    return 0;
+}
 
 int commit (int argc , char *const argv[]) {
     if (argc > 4) {
@@ -614,14 +628,18 @@ int commit (int argc , char *const argv[]) {
     }
     if (argc == 3) {
         perror ("please enter a commit message\n");
+        return 1;
     }
     if (strlen (argv[3]) > 72) {
         perror ("the commit message is too long!\n");
         return 1;
     }
+    char FIRST_ADDRESS[FILENAME_MAX];
+    getcwd (FIRST_ADDRESS , sizeof (FIRST_ADDRESS));
     if (chdir (".main") != 0) {
         perror ("there is no repository!\n");
     }
+    chdir ("master");
     chdir ("stages");
     char add_stage[FILENAME_MAX] , add_commit[FILENAME_MAX];
     getcwd (add_stage , sizeof(add_stage));
@@ -629,15 +647,15 @@ int commit (int argc , char *const argv[]) {
     chdir ("..");
     chdir ("commits");
     FILE *commitnumber = fopen ("commitnumber" , "r");
-    int number = 1;
+    int number = 0;
     if (commitnumber != NULL) {
         fscanf (commitnumber , "%d", &number);
     }
     fclose (commitnumber);
+    number++;
     char combined[100];
     sprintf (combined , "commit%d", number);
     CreateDirectory (combined , NULL);
-    number++;
     commitnumber = fopen ("commitnumber" , "w");
     fprintf (commitnumber , "%d", number);
     fclose (commitnumber);
@@ -646,53 +664,56 @@ int commit (int argc , char *const argv[]) {
     printf ("add_commit : %s\n", add_commit);
     DIR *dir = opendir (add_stage);
     struct dirent *entry;
-    while ((entry = readdir (dir)) != NULL /*&& strcmp (entry->d_name , ".") != 0 && strcmp (entry->d_name , "..") != 0*/) {
-        printf ("%s\n", entry->d_name);
-        if (entry->d_type == DT_DIR) {
-            printf ("%s is a (dir)\n", entry->d_name);
-            FILE *file1 , *file2;
-            char add1[FILENAME_MAX] , add2[FILENAME_MAX];
-            chdir (add_stage);
-            chdir (entry->d_name);
-            getcwd (add1 , sizeof (add1));
-            printf ("add1 : %s\n", add1);
-            chdir (add_commit);
-            CreateDirectory (entry->d_name , NULL);
-            _chdir (entry->d_name);
-            getcwd (add2 , sizeof (add2));
-            printf ("add2 : %s\n", add2);
-            chdir (add_stage);
-            DIR *dir1 = opendir (entry->d_name);
-            chdir (entry->d_name);
-            struct dirent *entry1;
-            while ((entry1 = readdir (dir1)) != NULL) {
-                file1 = fopen (entry1->d_name , "r");
-                chdir (add2);
-                file2 = fopen (entry1->d_name , "w");
+    while ((entry = readdir (dir)) != NULL) {
+        if (strcmp (entry->d_name , ".") != 0 && strcmp (entry->d_name , "..") != 0){
+            printf ("%s\n", entry->d_name);
+            if (entry->d_type == DT_DIR) {
+                printf ("%s is a (dir)\n", entry->d_name);
+                FILE *file1 , *file2;
+                char add1[FILENAME_MAX] , add2[FILENAME_MAX];
+                chdir (add_stage);
+                chdir (entry->d_name);
+                getcwd (add1 , sizeof (add1));
+                printf ("add1 : %s\n", add1);
+                chdir (add_commit);
+                CreateDirectory (entry->d_name , NULL);
+                chdir (entry->d_name);
+                getcwd (add2 , sizeof (add2));
+                printf ("add2 : %s\n", add2);
+                chdir (add1);
+                DIR *dir1 = opendir (".");
+                struct dirent *entry1;
+                while ((entry1 = readdir (dir1)) != NULL) {
+                    file1 = fopen (entry1->d_name , "r");
+                    chdir (add2);
+                    file2 = fopen (entry1->d_name , "w");
+                    char ch = getc (file1);
+                    while (ch != EOF) {
+                        putc (ch , file2);
+                        ch = getc (file1);
+                    }   
+                    fclose (file1);
+                    fclose (file2);
+                }
+                chdir (".."); 
+            } else {
+                FILE *file1 , *file2;
+                chdir (add_stage);
+                file1 = fopen (entry->d_name , "r");
+                chdir (add_commit);
+                file2 = fopen (entry->d_name , "w");
                 char ch = getc (file1);
                 while (ch != EOF) {
                     putc (ch , file2);
-                    ch = getc (file1);
+                    ch = getc (file1); 
                 }
                 fclose (file1);
                 fclose (file2);
+                chdir (combined);
             }
-            chdir (combined); 
-        } else {
-            FILE *file1 , *file2;
-            chdir (add_stage);
-            file1 = fopen (entry->d_name , "r");
-            chdir (add_commit);
-            file2 = fopen (entry->d_name , "w");
-            char ch = getc (file1);
-            while (ch != EOF) {
-                putc (ch , file2);
-                ch = getc (file1); 
-            }
-            fclose (file1);
-            fclose (file2);
-            chdir (combined);
+
         }
+        ////////////////////////////////////////////
     }
     return 0;
 }
@@ -757,7 +778,21 @@ int main (int argc , char *argv[]) {
             perror ("invalid command!\n");
             return 1;
         }
-    } 
+    } else if (strcmp (argv[1] , "branch") == 0) {
+        if (argc == 2) {
+            chdir (".main");
+            DIR *dir = opendir (".");
+            struct dirent *entry;
+            while ((entry = readdir (dir)) != NULL) {
+                if (strcmp (entry->d_name , "local") != 0 && strcmp (entry->d_name , ".") != 0 && strcmp (entry->d_name , "..") != 0) {
+                    printf ("%s\n" , entry->d_name);
+                }
+            }
+            chdir ("..");
+        } else {
+            make_branch (argc , argv);
+        }
+    }
     
     
     else {
