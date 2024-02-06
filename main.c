@@ -684,18 +684,32 @@ int commit (int argc , char *const argv[]) {
                 DIR *dir1 = opendir (".");
                 struct dirent *entry1;
                 while ((entry1 = readdir (dir1)) != NULL) {
-                    file1 = fopen (entry1->d_name , "r");
-                    chdir (add2);
-                    file2 = fopen (entry1->d_name , "w");
-                    char ch = getc (file1);
-                    while (ch != EOF) {
-                        putc (ch , file2);
-                        ch = getc (file1);
-                    }   
-                    fclose (file1);
-                    fclose (file2);
+                    if (strcmp (entry1->d_name , ".") != 0 && strcmp (entry1->d_name , "..") != 0) {
+                        char temp[FILENAME_MAX];
+                        getcwd (temp , sizeof(temp));
+                        printf ("temp : %s\n" , temp);
+                        printf ("entry1->d_name : %s\n" , entry1->d_name);
+                        file1 = fopen (entry1->d_name , "r");
+                        chdir (add2);
+                        file2 = fopen (entry1->d_name , "w");
+                        char ch = getc (file1);
+                        while (ch != EOF) {
+                            printf ("character : %c\n" , ch);
+                            putc (ch , file2);
+                            ch = getc (file1);
+                        }   
+                        fclose (file1);
+                        fclose (file2);
+                    }
+                    chdir (add1);
+                    remove (entry1->d_name);
+                    char temp[FILENAME_MAX];
+                    getcwd (temp , sizeof (temp));
+                    printf ("temp : %s\n" , temp);
                 }
-                chdir (".."); 
+                chdir ("..");
+                rmdir (entry->d_name);
+                chdir (add_commit);
             } else {
                 FILE *file1 , *file2;
                 chdir (add_stage);
@@ -709,12 +723,14 @@ int commit (int argc , char *const argv[]) {
                 }
                 fclose (file1);
                 fclose (file2);
-                chdir (combined);
+                chdir (add_stage);
+                remove (entry->d_name);
+                chdir (add_commit);
+                chdir ("..");
             }
-
         }
-        ////////////////////////////////////////////
     }
+    chdir (FIRST_ADDRESS);
     return 0;
 }
 int main (int argc , char *argv[]) {
