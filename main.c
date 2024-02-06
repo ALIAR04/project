@@ -774,11 +774,58 @@ int normal_log (int argc , char *const argv[]) {
     chdir (FIRST_ADDRESS);
     return 0;
 }
+int log_branch (int argc , char *const argv[]) {
+    char FIRST_ADDRESS[FILENAME_MAX];
+    getcwd (FIRST_ADDRESS , sizeof (FIRST_ADDRESS));
+    if (chdir (".main") != 0) {
+        perror ("there is no repository\n");
+        return 1;
+    }
+    DIR *dir = opendir (".");
+    struct dirent *entry;
+    int flag = 0;
+    while ((entry = readdir (dir)) != NULL) {
+        char temp1[FILENAME_MAX];
+        getcwd (temp1 , sizeof (temp1));
+        if (strcmp (entry->d_name , argv[3]) == 0) {
+            flag = 1;
+            chdir (argv[3]);
+            chdir ("commits");
+            DIR *dir13 = opendir (".");
+            struct dirent *entry13;
+            while ((entry13 = readdir (dir13)) != NULL) {
+                char temp2[FILENAME_MAX];
+                getcwd (temp2 , sizeof (temp2));
+                if (strcmp (entry13->d_name , ".") != 0 && strcmp (entry13->d_name , "..") != 0 && strcmp (entry13->d_name , "commitnumber.txt") != 0) {
+                    printf ("----------------------------------------\n");
+                    chdir (entry13->d_name);
+                    FILE *ggg = fopen ("information.txt" , "r");
+                    char ch = getc (ggg);
+                    while (ch != EOF) {
+                        printf ("%c" , ch);
+                        ch = getc (ggg);
+                    }
+                    fclose (ggg);
+                }
+                chdir (temp2);
+            }
+        }
+        chdir (temp1);
+    }
+    if (flag == 0) {
+        printf ("%s is not a branch\n" , argv[3]);
+        chdir (FIRST_ADDRESS);
+        return 1;
+    }
+
+
+    chdir (FIRST_ADDRESS);
+    return 0;
+}
+
+
 
 int main (int argc , char *argv[]) {
-    for (int i = 0; i < argc; i++) {
-        printf ("argv%d : %s\n",i , argv[i]);
-    }
     if (argc < 2) {
         perror ("please enter a valid command:\n");
         return 1;
@@ -857,7 +904,7 @@ int main (int argc , char *argv[]) {
             if (strcmp (argv[2] , "-n") == 0) {
 
             } else if (strcmp (argv[2] , "-branch") == 0) {
-
+                log_branch (argc , argv);
             } else if (strcmp (argv[2] , "-author") == 0) {
 
             } else if (strcmp (argv[2] , "-since") == 0) {
@@ -874,11 +921,7 @@ int main (int argc , char *argv[]) {
             perror ("please enter a valid command\n");
             return 1;
         }
-    }
-    
-
-    
-    else {
+    } else {
         perror ("this is not a valid command\n");
     }
     return 0;
