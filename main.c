@@ -620,7 +620,6 @@ int make_branch (int argc , char *const argv[]) {
     chdir (FIRST_ADDRESS);
     return 0;
 }
-
 int commit (int argc , char *const argv[]) {
     if (argc > 4) {
         perror ("please enter the commit message between \"\"\n");
@@ -809,6 +808,7 @@ int main (int argc , char *argv[]) {
             make_branch (argc , argv);
         }
     }
+    
     
     
     else {
