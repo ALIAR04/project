@@ -738,6 +738,43 @@ int commit (int argc , char *const argv[]) {
     chdir (FIRST_ADDRESS);
     return 0;
 }
+int normal_log (int argc , char *const argv[]) {
+    char FIRST_ADDRESS[FILENAME_MAX];
+    getcwd (FIRST_ADDRESS , sizeof (FIRST_ADDRESS));
+    chdir (".main");
+    DIR *dir = opendir (".");
+    struct dirent *entry;
+    while ((entry = readdir (dir)) != NULL) {
+        char temp1[FILENAME_MAX];
+        getcwd (temp1 , sizeof (temp1));
+        if (strcmp (entry->d_name , ".") != 0 && strcmp (entry->d_name , "..") != 0 && strcmp (entry->d_name , "local") != 0) {
+            chdir (entry->d_name);
+            chdir ("commits");
+            DIR * dir12 = opendir (".");
+            struct dirent *entry12;
+            while ((entry12 = readdir (dir12)) != NULL) {
+                char temp2[FILENAME_MAX];
+                getcwd (temp2 , sizeof (temp2));
+                if (strcmp (entry->d_name , ".") != 0 && strcmp (entry->d_name , "..") != 0 && strcmp (entry->d_name , "commitnumber") != 0) {
+                    printf ("--------------------------------------\n");
+                    chdir (entry12->d_name);
+                    FILE *ggg = fopen ("information.txt" , "r");
+                    char ch = getc (ggg);
+                    while (ch != EOF) {
+                        printf ("%c" , ch);
+                        ch = getc (ggg);
+                    }
+                    fclose (ggg);
+                }
+                chdir (temp2);
+            }
+        }
+        chdir (temp1);
+    }
+    chdir (FIRST_ADDRESS);
+    return 0;
+}
+
 int main (int argc , char *argv[]) {
     for (int i = 0; i < argc; i++) {
         printf ("argv%d : %s\n",i , argv[i]);
@@ -815,7 +852,7 @@ int main (int argc , char *argv[]) {
         }
     } else if (strcmp (argv[1] , "log") == 0) {
         if (argc == 2) {
-            // normal_log (argc , argv);
+            normal_log (argc , argv);
         } else if (argc == 4) {
             if (strcmp (argv[2] , "-n") == 0) {
 
